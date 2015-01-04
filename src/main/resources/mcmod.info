@@ -1,0 +1,16 @@
+[
+{
+  "modid": "oreunify",
+  "name": "Ore Unify",
+  "description": "Unify all ores & ingots",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["ProK"],
+  "credits": "The Forge and FML guys, for making Forge and FML (sic!)",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
