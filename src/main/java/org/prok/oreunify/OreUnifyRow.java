@@ -1,7 +1,6 @@
 package org.prok.oreunify;
 
 import cpw.mods.fml.common.registry.GameData;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.oredict.OreDictionary;
 
@@ -37,25 +36,19 @@ public final class OreUnifyRow {
         return result;
     }
 
-    public static List<ItemStack> parseList(String s) {
-        List<ItemStack> list = new ArrayList<ItemStack>();
-        int c1 = 0, c2;
-        while (c1 < s.length()) {
-            c2 = s.indexOf(',', c1);
-            String n = c2 < 0 ? s.substring(c1) : s.substring(c1, c2);
-            ItemStack stack = parseStack(n.trim());
+    public static List<OreUnifyStack> parseList(String s) {
+        String[] stacks = s.split(",");
+        List<OreUnifyStack> list = new ArrayList<OreUnifyStack>(stacks.length);
+        for (String stackRaw : stacks) {
+            OreUnifyStack stack = parseStack(stackRaw.trim());
             if (stack != null) {
                 list.add(stack);
             }
-            if (c2 < 0) {
-                break;
-            }
-            c1 = c2 + 1;
         }
         return list;
     }
 
-    public static ItemStack parseStack(String s) {
+    public static OreUnifyStack parseStack(String s) {
         if ("null".equals(s) || s.length() == 0) {
             return null;
         }
@@ -65,26 +58,22 @@ public final class OreUnifyRow {
             meta = Integer.parseInt(s.substring(c + 1).trim());
             s = s.substring(0, c);
         }
-        Item item = GameData.getItemRegistry().getObject(s.trim());
-        if (item == null) {
-            return null;
-        }
-        return new ItemStack(item, 1, meta);
+        return new OreUnifyStack(s.trim(), 1, meta);
     }
 
     public String name;
-    public ItemStack replacement;
-    public List<ItemStack> candidates;
+    public OreUnifyStack replacement;
+    public List<OreUnifyStack> candidates;
 
     @Override
     public String toString() {
         return String.format("%s: %s; [%s]", name, formatStack(replacement), formatList(candidates));
     }
 
-    public static String formatList(List<ItemStack> list) {
+    public static String formatList(List<OreUnifyStack> list) {
         StringBuilder builder = new StringBuilder();
         boolean first = true;
-        for (ItemStack stack : list) {
+        for (OreUnifyStack stack : list) {
             if (!first) {
                 builder.append(", ");
             } else {
@@ -95,15 +84,16 @@ public final class OreUnifyRow {
         return builder.toString();
     }
 
-    public static String formatStack(ItemStack stack) {
+    public static String formatStack(OreUnifyStack stack) {
         if (stack == null) {
             return "null";
         }
-        final String name = GameData.getItemRegistry().getNameForObject(stack.getItem());
-        if (name == null) {
+        final ItemStack itemStack = stack.get();
+        if (itemStack == null) {
             return "null";
         }
-        final int meta = stack.getItemDamage();
+        final String name = GameData.getItemRegistry().getNameForObject(itemStack.getItem());
+        final int meta = itemStack.getItemDamage();
         if (meta == 0) {
             return name;
         }
@@ -113,12 +103,20 @@ public final class OreUnifyRow {
     public static OreUnifyRow create(String name) {
         OreUnifyRow row = new OreUnifyRow();
         row.name = name;
-        row.candidates = OreDictionary.getOres(name);
+        row.candidates = convert(OreDictionary.getOres(name));
         final int length = row.candidates.size();
         if (length == 0 || length == 1 && OreUnifyConfig.INSTANCE.ignoreUnique) {
             return null;
         }
         row.replacement = row.candidates.get(0);
         return row;
+    }
+
+    private static List<OreUnifyStack> convert(List<ItemStack> stacks) {
+        List<OreUnifyStack> result = new ArrayList(stacks.size());
+        for (ItemStack stack : stacks) {
+            result.add(new OreUnifyStack(GameData.getItemRegistry().getNameForObject(stack.getItem()), stack.stackSize, stack.getItemDamage()));
+        }
+        return result;
     }
 }

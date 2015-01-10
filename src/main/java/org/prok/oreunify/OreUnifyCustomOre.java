@@ -1,12 +1,10 @@
 package org.prok.oreunify;
 
-import net.minecraft.item.ItemStack;
-
 import java.util.List;
 
 public class OreUnifyCustomOre {
     public String name;
-    public List<ItemStack> stacks;
+    public List<OreUnifyStack> stacks;
 
     public static OreUnifyCustomOre parse(String s) {
         OreUnifyCustomOre customOre = new OreUnifyCustomOre();

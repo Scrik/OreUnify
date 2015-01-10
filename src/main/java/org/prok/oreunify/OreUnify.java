@@ -1,12 +1,12 @@
 package org.prok.oreunify;
 
 import cpw.mods.fml.common.Mod;
-import cpw.mods.fml.common.Mod.EventHandler;
-import cpw.mods.fml.common.event.FMLInitializationEvent;
-import cpw.mods.fml.common.event.FMLPostInitializationEvent;
-import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.common.event.*;
+import cpw.mods.fml.common.network.NetworkCheckHandler;
+import cpw.mods.fml.relauncher.Side;
 import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.play.server.S01PacketJoinGame;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.oredict.OreDictionary;
@@ -14,22 +14,23 @@ import net.minecraftforge.oredict.OreDictionary;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Mod(modid = "oreunify", useMetadata = true)
 public class OreUnify {
-    @EventHandler
+    @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
 
     }
 
-    @EventHandler
+    @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         OreUnifyConfig.load(new Configuration(event.getSuggestedConfigurationFile()));
 
         MinecraftForge.EVENT_BUS.register(new OreUnifyEventHandler());
     }
 
-    @EventHandler
+    @Mod.EventHandler
     public void postInit(FMLPostInitializationEvent event) {
         if (OreUnifyConfig.INSTANCE.mapSuggestions) {
             OreUnifyConfig.INSTANCE.setMapping(computeSuggestions());
@@ -52,16 +53,33 @@ public class OreUnify {
                 new Exception("Error occurred during dictionary dump", e).printStackTrace();
             }
         }
-        for (OreUnifyCustomOre ore : OreUnifyConfig.INSTANCE.customOres) {
-            for (ItemStack stack : ore.stacks) {
-                OreDictionary.registerOre(ore.name, stack);
+    }
+
+    @Mod.EventHandler
+    public void onLoadComplete(FMLLoadCompleteEvent event) {
+        if (sDictionaryInit) {
+            sDictionaryInit = false;
+            for (OreUnifyCustomOre ore : OreUnifyConfig.INSTANCE.customOres) {
+                for (OreUnifyStack stack : ore.stacks) {
+                    final ItemStack itemStack = stack.get();
+                    System.out.println("Register " + itemStack + " as " + ore.name);
+                    OreDictionary.registerOre(ore.name, itemStack);
+                }
             }
+            OreUnifyDictionary.initDictionary(OreUnifyConfig.INSTANCE.itemMapping);
         }
-        OreUnifyDictionary.initDictionary(OreUnifyConfig.INSTANCE.itemMapping);
         if (OreUnifyConfig.INSTANCE.itemStackHook) {
+            System.out.println("Enabling ItemStack hook...");
             OreUnifyDictionary.enableItemStackHook();
         }
     }
+
+    @NetworkCheckHandler
+    public boolean netCheckHandler(Map<String, String> mods, Side side) {
+        return true;
+    }
+
+    private static boolean sDictionaryInit = true;
 
     public static OreUnifyRow[] computeSuggestions() {
         List<OreUnifyRow> list = new ArrayList<OreUnifyRow>();

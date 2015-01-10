@@ -17,20 +17,23 @@ public class OreUnifyDictionary {
 
     public static ItemStack getUnified(ItemStack item) {
         sItemStackHookDisable = true;
-        for (int id : OreDictionary.getOreIDs(item)) {
-            ItemStack stack = sDictionary.get(id);
-            if (stack == null) {
-                continue;
+        try {
+            for (int id : OreDictionary.getOreIDs(item)) {
+                ItemStack stack = sDictionary.get(id);
+                if (stack == null) {
+                    continue;
+                }
+                if (stack.isItemEqual(item)) {
+                    return item;
+                }
+                ItemStack newStack = stack.copy();
+                newStack.stackSize = item.stackSize;
+                return newStack;
             }
-            if (stack.isItemEqual(item)) {
-                return item;
-            }
-            ItemStack newStack = stack.copy();
-            newStack.stackSize = item.stackSize;
-            return newStack;
+            return item;
+        } finally {
+            sItemStackHookDisable = false;
         }
-        sItemStackHookDisable = false;
-        return item;
     }
 
     public static ItemStack getUnified(Block block, int blockMetadata) {
@@ -51,6 +54,7 @@ public class OreUnifyDictionary {
             if (!stack.isItemEqual(itemStack)) {
                 itemStack.func_150996_a(stack.getItem());
                 itemStack.setItemDamage(stack.getItemDamage());
+                itemStack.setTagCompound(stack.getTagCompound());
             }
             return;
         }
@@ -84,13 +88,14 @@ public class OreUnifyDictionary {
         return false;
     }
 
-    private static ItemStack findValidReplacement(ItemStack replacement, List<ItemStack> candidates) {
-        if (isValid(replacement)) {
-            return replacement;
+    private static ItemStack findValidReplacement(OreUnifyStack replacement, List<OreUnifyStack> candidates) {
+        ItemStack itemStack;
+        if (isValid(itemStack = replacement.get())) {
+            return itemStack;
         }
-        for (ItemStack stack : candidates) {
-            if (isValid(stack)) {
-                return stack;
+        for (OreUnifyStack stack : candidates) {
+            if (isValid(itemStack = stack.get())) {
+                return itemStack;
             }
         }
         return null;

@@ -1,7 +1,12 @@
 package org.prok.oreunify;
 
 import net.minecraft.launchwrapper.IClassTransformer;
-import org.objectweb.asm.*;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.MethodVisitor;
+
+import static org.objectweb.asm.Opcodes.*;
 
 public class OreUnifyTransformer implements IClassTransformer {
     @Override
@@ -18,7 +23,7 @@ public class OreUnifyTransformer implements IClassTransformer {
         final String ITEM_SIGNATURE = obfuscated ? "adb" : "net/minecraft/item/Item";
         final String ITEM_STACK_SIGNATURE = obfuscated ? "add" : "net/minecraft/item/ItemStack";
         ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-        ClassVisitor classVisitor = new ClassVisitor(Opcodes.ASM5, classWriter) {
+        ClassVisitor classVisitor = new ClassVisitor(ASM5, classWriter) {
             @Override
             public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
                 MethodVisitor methodVisitor = super.visitMethod(access, name, desc, signature, exceptions);
@@ -27,9 +32,9 @@ public class OreUnifyTransformer implements IClassTransformer {
                     return new MethodVisitor(api, methodVisitor) {
                         @Override
                         public void visitInsn(int opcode) {
-                            if (opcode == Opcodes.RETURN) {
-                                super.visitVarInsn(Opcodes.ALOAD, 0);
-                                super.visitMethodInsn(Opcodes.INVOKESTATIC, "org/prok/oreunify/OreUnifyDictionary", "hookItemStack", "(L" + ITEM_STACK_SIGNATURE + ";)V", false);
+                            if (opcode == RETURN) {
+                                super.visitVarInsn(ALOAD, 0);
+                                super.visitMethodInsn(INVOKESTATIC, "org/prok/oreunify/OreUnifyDictionary", "hookItemStack", "(L" + ITEM_STACK_SIGNATURE + ";)V", false);
                             }
                             super.visitInsn(opcode);
                         }
